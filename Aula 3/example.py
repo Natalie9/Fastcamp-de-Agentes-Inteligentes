@@ -11,6 +11,9 @@ from pydantic import (
 
 
 class Role(IntFlag):
+    """
+    Classe Role criando tipo author, editor, developer e Admin que pode assumir um dos cargos anteriores
+    """
     Author = auto()
     Editor = auto()
     Developer = auto()
@@ -18,6 +21,11 @@ class Role(IntFlag):
 
 
 class User(BaseModel):
+    """
+    Classe User com atributos de nome, email, senha e role
+    Os atributos possuem um tipo, e nas propriedades de campo é possível colocar um exemplo (estilo placeholder), 
+    descrição e se deve estar congelado (frozen), tbm uma opção padrão
+    """
     name: str = Field(examples=["Arjan"])
     email: EmailStr = Field(
         examples=["example@arjancodes.com"],
@@ -31,6 +39,10 @@ class User(BaseModel):
 
 
 def validate(data: dict[str, Any]) -> None:
+    """
+    Definido método de validação, recebe parâmetro data como um dicionário. 
+    Nessa função tenta enviar em User.model_validate(data), ou dá erro de que usuário é inválido
+    """
     try:
         user = User.model_validate(data)
         print(user)
@@ -41,6 +53,10 @@ def validate(data: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    """
+    No método main cria-se 2 exemplos de teste, um com dados corretos pra um novo usuário 
+    e outro com email inválido.
+    """
     good_data = {
         "name": "Arjan",
         "email": "example@arjancodes.com",

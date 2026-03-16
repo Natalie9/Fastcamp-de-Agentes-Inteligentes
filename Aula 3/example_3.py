@@ -26,6 +26,10 @@ class Role(enum.IntFlag):
 
 
 class User(BaseModel):
+    """
+    Neste exemplo a declaração de classes e validações é igual a anterior, 
+    mas é acrescentado uma divisão de validação do usuário no mode before e after.
+    """
     name: str = Field(examples=["Example"])
     email: EmailStr = Field(
         examples=["user@arjancodes.com"],
@@ -64,6 +68,9 @@ class User(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_user_pre(cls, v: dict[str, Any]) -> dict[str, Any]:
+        """
+        No mode before a validação segue como a anterior
+        """
         if "name" not in v or "password" not in v:
             raise ValueError("Name and password are required")
         if v["name"].casefold() in v["password"].casefold():
@@ -77,6 +84,11 @@ class User(BaseModel):
 
     @model_validator(mode="after")
     def validate_user_post(self, v: Any) -> Self:
+        """
+        No mode after cria-se uma regra (fictícia) de que só pode ser admin se o nome for Arjan.
+        Pelo que entendi é uma validação anterior sobre texto dos campos e outra validação 
+        entre os campos em si.
+        """
         if self.role == Role.Admin and self.name != "Arjan":
             raise ValueError("Only Arjan can be an admin")
         return self
@@ -84,16 +96,28 @@ class User(BaseModel):
     @field_serializer("role", when_used="json")
     @classmethod
     def serialize_role(cls, v) -> str:
+        """
+        Nova annotation de @field_serializer pra role indicando ser usada quando for json. 
+        O método retorna o campo name.
+        """
         return v.name
 
     @model_serializer(mode="wrap", when_used="json")
     def serialize_user(self, serializer, info) -> dict[str, Any]:
+        """
+        O método verifica se não existe valor em info.include ou info.exclude 
+        e retorna o valor dos campos nome e role. Se existir o método serializer é chamado.
+        """
         if not info.include and not info.exclude:
             return {"name": self.name, "role": self.role.name}
         return serializer(self)
 
 
 def main() -> None:
+    """
+    No main são testados diferentes retornos do serializer, um retornando dicionário, 
+    outro com texto json, outro com texto json mas tirando o campo de role.
+    """
     data = {
         "name": "Arjan",
         "email": "example@arjancodes.com",

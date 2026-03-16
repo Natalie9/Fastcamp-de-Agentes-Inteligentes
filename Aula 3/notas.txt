@@ -1,0 +1,47 @@
+Notas gerais 
+
+Classe Role criando tipo author, editor, developer e Admin que pode assumir um dos cargos anteriores 
+Classe User com atributos de nome, email, senha e role 
+Os atributos possuem um tipo e nas propriedades de campo é possível colocar um exemplo (placeholder), descrição e se deve estar congelado (?), tbm uma opção padrão 
+
+Definido método de validação, recebe parâmetro data como um dicinário. Nessa função tenta enviar em User.model_validate(data), ou da erro de que usuário é inválido 
+No método main cria-se 2 exemplos de teste, um com dados corretos pra um novo usuário e outro com email inválido. 
+
+Exemplo 2 
+2 regex para validar senha e nome 
+Cria classe Role como um enum atribuindo valores para cada role. 
+Cria classe usuário usando BaseModel, com atributo de nome, email com tipagem especifica para email, senha, e role. 
+Com uma anotation @field_validator(“name”) e outra @classmethod cria-se o método de validação pro nome usando a regex 
+Com as mesmas anotations cria-se o método de validação para role, com adicional de mode=”before” que presumo ser algo pra aplicar a regra antes de tentar inserir no usuário (?) 
+Por fim com a anotation @model_validator e mode = before tem um método pra validar o usuário criado. Campo nome e senha nunca devem estar vazios, nem a senha conter o nome e deve atender a regex. 
+Por fim é aplicada uma função e hash de encode da senha 
+No fim o método main realiza criação de usuários com diferentes exemplos de dados para mostrar o processo de validação. 
+
+Exemplo 3 
+Neste exemplo a declaração de classes e validações é igual a anterior, mas é acrescentado uma divisão de validação do usuário no mode before e after. 
+No before a validação segue como a anterior 
+No after cria-se uma regra (fictícia) de que só pode ser admin se o nome for Arjan. 
+Pelo que entendi é uma validação anterior sobre texto dos campos e outra validação entre os campos em si. 
+Tem uma nova anotarion de @field_serializer pra role e indicando ser usada quando for json. O método retorna o campo name, não entendi os parâmetros passados.  
+Tem também @model_serializer com modo wrap e tbm aplicado em casos de json. 
+O método verfica de não existe valor em info.include ou info.exclude e retorna o valor dos campos nome e role. Se existir o método rerializer é chamado. 
+No main são testados diferentes retornos do serializer, um retornando dicionário, outro com texto json, outro com texto json mas tirando o campo de role. 
+
+Exemplo 4 
+Aqui é trabalhado o fastAPI 
+A classe User que é o basemodel é declarada
+Model_config com extra: forbid 
+Declaração dos mesmos campos anteriores, mas agora adicionado o campo Friend que é uma lista de ids, com no máximo 500 itens. 
+Lista de bloqueados, de assinaturas e o próprio id 
+O campo id tem um serializer próprio de uuid4 para string 
+Com fastAPI é criado rotas http, como get de /users que retorna uma lista de usuários (não entendi bem os parâmetros da anotation vs o retorno da função). 
+Tem post /users que faz um append em user 
+O get user/id chama uma função next buscando o usuário com o id correspondente. 
+No main tem um TestClient(app) as cliente: -- isso não entendi a estrutura 
+	Tem um for de 5 vezes usando um cliente pra chamar post de usuários, criando os 5. 
+	Faz um assert conferindo se teve response == 200 
+	Uma sequencia de asserts que parece tipo uns ifelse validando. 
+	Depois dessa sequencia de asserts no json do response ele chama um user.mode_validate com o json. 
+	Depois mais uma sequencia de asserts. 
+	Depois faz um get de users/id 
+	Novos asserts, um conferindo se o nome é User 5 respondendo que é o usuário mais novo. 

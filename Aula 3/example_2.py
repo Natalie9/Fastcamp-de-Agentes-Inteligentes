@@ -18,6 +18,9 @@ VALID_NAME_REGEX = re.compile(r"^[a-zA-Z]{2,}$")
 
 
 class Role(enum.IntFlag):
+    """
+    Cria classe Role como um enum atribuindo valores para cada role.
+    """
     Author = 1
     Editor = 2
     Admin = 4
@@ -25,6 +28,10 @@ class Role(enum.IntFlag):
 
 
 class User(BaseModel):
+    """
+    Cria classe usuário usando BaseModel, com atributo de nome, 
+    email com tipagem especifica para email, senha, e role.
+    """
     name: str = Field(examples=["Arjan"])
     email: EmailStr = Field(
         examples=["user@arjancodes.com"],
@@ -41,6 +48,10 @@ class User(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
+        """
+        Com uma anotation @field_validator(“name”) e outra @classmethod 
+        cria-se o método de validação pro nome usando a regex
+        """
         if not VALID_NAME_REGEX.match(v):
             raise ValueError(
                 "Name is invalid, must contain only letters and be at least 2 characters long"
@@ -50,6 +61,10 @@ class User(BaseModel):
     @field_validator("role", mode="before")
     @classmethod
     def validate_role(cls, v: int | str | Role) -> Role:
+        """
+        Método de validação para role, com adicional de mode=”before” 
+        para aplicar a regra antes de tentar inserir no usuário.
+        """
         op = {int: lambda x: Role(x), str: lambda x: Role[x], Role: lambda x: x}
         try:
             return op[type(v)](v)
@@ -61,6 +76,11 @@ class User(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_user(cls, v: dict[str, Any]) -> dict[str, Any]:
+        """
+        Com a anotation @model_validator e mode = before tem um método pra validar o usuário criado. 
+        Campo nome e senha nunca devem estar vazios, nem a senha conter o nome e deve atender a regex.
+        Por fim é aplicada uma função e hash de encode da senha
+        """
         if "name" not in v or "password" not in v:
             raise ValueError("Name and password are required")
         if v["name"].casefold() in v["password"].casefold():
@@ -83,6 +103,10 @@ def validate(data: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    """
+    O método main realiza criação de usuários com diferentes exemplos de dados 
+    para mostrar o processo de validação.
+    """
     test_data = dict(
         good_data={
             "name": "Arjan",

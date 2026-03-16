@@ -11,6 +11,14 @@ app = FastAPI()
 
 
 class User(BaseModel):
+    """
+    Aqui é trabalhado o fastAPI.
+    A classe User que é o basemodel é declarada.
+    Model_config com extra: forbid.
+    Declaração dos mesmos campos anteriores, mas agora adicionando o campo Friends 
+    que é uma lista de ids, com no máximo 500 itens.
+    Lista de bloqueados, de assinaturas (signup_ts) e o próprio id.
+    """
     model_config = {
         "extra": "forbid",
     }
@@ -32,22 +40,34 @@ class User(BaseModel):
 
     @field_serializer("id", when_used="json")
     def serialize_id(self, id: UUID4) -> str:
+        """
+        O campo id tem um serializer próprio de uuid4 para string.
+        """
         return str(id)
 
 
 @app.get("/users", response_model=list[User])
 async def get_users() -> list[User]:
+    """
+    Com fastAPI é criado rotas http, como get de /users que retorna uma lista de usuários.
+    """
     return list(User.__users__)
 
 
 @app.post("/users", response_model=User)
 async def create_user(user: User):
+    """
+    Post /users que faz um append em user.
+    """
     User.__users__.append(user)
     return user
 
 
 @app.get("/users/{user_id}", response_model=User)
 async def get_user(user_id: UUID4) -> User | JSONResponse:
+    """
+    O get user/id chama uma função next buscando o usuário com o id correspondente.
+    """
     try:
         return next((user for user in User.__users__ if user.id == user_id))
     except StopIteration:
@@ -55,6 +75,16 @@ async def get_user(user_id: UUID4) -> User | JSONResponse:
 
 
 def main() -> None:
+    """
+    No main tem um TestClient(app) as client: -- estrutura para testar a aplicação.
+    Tem um for de 5 vezes usando um cliente pra chamar post de usuários, criando os 5.
+    Faz um assert conferindo se teve response == 200.
+    Uma sequencia de asserts que parece tipo uns ifelse validando.
+    Depois dessa sequencia de asserts no json do response ele chama um user.model_validate com o json.
+    Depois mais uma sequencia de asserts.
+    Depois faz um get de users/id.
+    Novos asserts, um conferindo se o nome é User 5 respondendo que é o usuário mais novo.
+    """
     with TestClient(app) as client:
         for i in range(5):
             response = client.post(
