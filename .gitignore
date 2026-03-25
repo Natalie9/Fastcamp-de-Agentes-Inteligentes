@@ -1,1 +1,15 @@
 .env
+*/minio
+*/nodes
+*/waha
+*/storage
+*/tmp-*
+n8n*
+*.log
+database*
+*/.venv
+*/qdrant*
+*/whatsapp*
+config
+
+
