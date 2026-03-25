@@ -1,0 +1,98 @@
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct, Document
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+
+# Inicializa o cliente Qdrant apontando para o endereço do Docker local
+client = QdrantClient(
+    url=os.environ.get("QDRANT_URL"),
+    api_key=os.environ.get("QDRANT_API_KEY"),
+    cloud_inference=True
+)
+
+# Cria uma nova coleção chamada "items" com configuração de vetores (384 dimensões e distância Cosseno)
+client.create_collection(
+    collection_name="items",
+    vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+)
+
+# Lista de itens do menu (nome, descrição, preço, categoria) para serem inseridos no banco
+menu_items = [
+    ("Pad Thai with Tofu", "Stir-fried rice noodles with tofu bean sprouts scallions and crushed peanuts in traditional tamarind sauce", "$13.95", "Noodles"),
+    ("Grilled Salmon Fillet", "Wild-caught Atlantic salmon grilled with lemon butter and fresh herbs served with seasonal vegetables", "$24.50", "Seafood Entrees"),
+    ("Mushroom Risotto", "Creamy arborio rice with mixed mushrooms parmesan truffle oil and fresh thyme", "$16.75", "Vegetarian"),
+    ("Bibimbap Bowl", "Korean rice bowl with seasoned vegetables fried egg gochujang sauce and choice of protein", "$14.50", "Korean Bowls"),
+    ("Falafel Wrap", "Crispy chickpea fritters with hummus tahini cucumber tomato and pickled vegetables in warm pita", "$11.25", "Mediterranean"),
+    ("Shrimp Tacos", "Three soft tacos with grilled shrimp cabbage slaw chipotle aioli and fresh lime", "$13.00", "Tacos"),
+    ("Vegetable Curry", "Mixed vegetables in aromatic coconut curry sauce with jasmine rice and naan bread", "$12.95", "Indian Curries"),
+    ("Tuna Poke Bowl", "Fresh ahi tuna with avocado edamame cucumber seaweed salad over sushi rice with spicy mayo", "$16.50", "Poke Bowls"),
+    ("Margherita Pizza", "Fresh mozzarella san marzano tomatoes basil and extra virgin olive oil on wood-fired crust", "$14.00", "Pizza"),
+    ("Chicken Tikka Masala", "Tandoori chicken in creamy tomato sauce with aromatic spices served with basmati rice", "$15.95", "Indian Entrees"),
+    ("Greek Salad", "Romaine lettuce tomatoes cucumbers kalamata olives feta cheese red onion with lemon oregano dressing", "$10.50", "Salads"),
+    ("Lobster Roll", "Fresh Maine lobster meat with light mayo on toasted buttery roll served with chips", "$22.00", "Seafood Sandwiches"),
+    ("Quinoa Buddha Bowl", "Organic quinoa with roasted chickpeas kale sweet potato tahini dressing and hemp seeds", "$13.50", "Healthy Bowls"),
+    ("Beef Pho", "Traditional Vietnamese beef noodle soup with rice noodles fresh herbs bean sprouts and lime", "$12.75", "Noodle Soups"),
+    ("Eggplant Parmesan", "Breaded eggplant layered with marinara mozzarella and parmesan served with pasta", "$15.25", "Italian Entrees"),
+    ("Crab Cakes", "Maryland-style lump crab cakes with remoulade sauce and mixed greens", "$18.50", "Seafood Appetizers"),
+    ("Tofu Stir Fry", "Crispy tofu with broccoli bell peppers snap peas in garlic ginger sauce over steamed rice", "$12.50", "Vegetarian Entrees"),
+    ("Salmon Sushi Platter", "12 pieces of fresh salmon nigiri and sashimi with wasabi pickled ginger and soy sauce", "$19.95", "Sushi"),
+    ("Caprese Sandwich", "Fresh mozzarella tomatoes basil pesto balsamic glaze on ciabatta bread", "$11.75", "Sandwiches"),
+    ("Tom Yum Soup", "Spicy and sour Thai soup with shrimp lemongrass galangal mushrooms and kaffir lime leaves", "$11.50", "Soups"),
+    ("Lentil Dal", "Red lentils simmered with turmeric cumin coriander served with rice and naan", "$11.95", "Vegan Entrees"),
+    ("Fish and Chips", "Beer-battered cod with crispy fries malt vinegar and tartar sauce", "$16.00", "British Classics"),
+    ("Veggie Burger", "House-made black bean and quinoa patty with avocado sprouts tomato on brioche bun", "$13.25", "Burgers"),
+    ("Miso Ramen", "Rich miso broth with ramen noodles soft-boiled egg bamboo shoots nori and scallions", "$14.50", "Ramen"),
+    ("Stuffed Bell Peppers", "Roasted bell peppers filled with rice vegetables herbs and melted cheese", "$13.75", "Vegetarian Entrees"),
+    ("Scallop Risotto", "Pan-seared sea scallops over creamy parmesan risotto with white wine and lemon", "$26.50", "Seafood Specials"),
+    ("Spring Rolls", "Fresh rice paper rolls with vegetables tofu rice noodles herbs and peanut dipping sauce", "$8.95", "Appetizers"),
+    ("Oyster Po Boy", "Fried oysters with lettuce tomato pickles and remoulade on french bread", "$15.50", "Sandwiches"),
+    ("Portobello Mushroom Steak", "Grilled portobello cap marinated in balsamic with roasted vegetables and quinoa", "$14.95", "Vegan Entrees"),
+    ("Coconut Shrimp", "Jumbo shrimp breaded in shredded coconut served with sweet chili sauce", "$14.25", "Seafood Appetizers")
+]
+
+# Gera os "pontos" (vetores + metadados) para cada item do menu
+points = []
+for i, menu_item in enumerate(menu_items):
+    point = PointStruct(
+        id=i,
+        vector=Document(
+            # O texto usado para gerar o embedding combina nome e descrição
+            text=f"{menu_item[0]} {menu_item[1]}",
+            model="sentence-transformers/all-MiniLM-L6-v2"
+        ),
+        payload={
+            "item_name": menu_item[0],
+            "description": menu_item[1],
+            "price": menu_item[2],
+            "category": menu_item[3],
+        }
+    )
+    points.append(point)
+
+# Insere (ou atualiza) os pontos na coleção "items"
+client.upsert(
+  collection_name="items",
+  points=points,
+)
+
+# Texto da consulta para busca semântica
+query_text = "vegetarian dishes"
+
+# Realiza a busca por itens similares baseados no significado do texto da consulta
+results = client.query_points(
+    collection_name="items",
+    query=Document(text=query_text, model="sentence-transformers/all-MiniLM-L6-v2"),
+    with_payload=True,
+    limit=5
+)
+
+# Exibe os resultados encontrados
+for result in results.points:
+    print(f"Item: {result.payload.get('item_name', 'N/A')}")
+    print(f"Score: {result.score}")
+    print(f"Description: {result.payload['description'][:150]}...")
+    print(f"Price: {result.payload.get('price', 'N/A')}")
+    print("---")

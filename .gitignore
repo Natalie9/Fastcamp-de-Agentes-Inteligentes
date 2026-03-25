@@ -8,8 +8,7 @@ n8n*
 *.log
 database*
 */.venv
-*/qdrant*
 */whatsapp*
 config
-
+qdrant_data
 
